@@ -4,7 +4,6 @@
 
 import streamlit as st
 import pandas as pd
- 
 
 # -----------------------------
 # Page Configuration
@@ -28,27 +27,56 @@ uploaded_file = st.sidebar.file_uploader("Upload Excel File", type=["xlsx", "xls
 # -----------------------------
 if uploaded_file is not None:
     try:
-        # Try to import openpyxl (required for Excel reading)
-        import openpyxl
+        import openpyxl  # Required for Excel reading
 
-        # Read Excel file safely
+        # Read Excel file
         df = pd.read_excel(uploaded_file, engine="openpyxl")
 
         st.success("✅ Excel file uploaded successfully!")
 
         # -----------------------------
-        # Display the uploaded data
+        # Display Uploaded Data
         # -----------------------------
         st.subheader("📊 Uploaded Marks Data")
         st.dataframe(df)
 
         # -----------------------------
-        # Check if required columns exist
+        # Normalize Column Names
         # -----------------------------
-        required_cols = {"Semester", "Course", "Credit_Hours", "Grade_Point"}
-        if not required_cols.issubset(df.columns):
-            st.error("❌ Missing required columns. Please include: Semester, Course, Credit_Hours, and Grade_Point.")
+        df.columns = df.columns.str.strip().str.lower().str.replace(" ", "_")
+
+        # Expected column names after cleaning
+        required_cols = {"semester", "course", "credithours", "gradepoint"}
+
+        # Try alternate spellings
+        rename_map = {}
+        for col in df.columns:
+            if "credit" in col:
+                rename_map[col] = "credithours"
+            elif "grade" in col and "point" in col:
+                rename_map[col] = "gradepoint"
+        df = df.rename(columns=rename_map)
+
+        # Validate columns
+        if not {"semester", "credithours", "gradepoint"}.issubset(df.columns):
+            st.error("❌ Missing required columns. Your Excel must have columns for Semester, CreditHours, and GradePoint.")
             st.stop()
+
+        # -----------------------------
+        # Calculate GPA per Semester
+        # -----------------------------
+        gpa_summary = (
+            df.groupby("semester")
+            .apply(lambda x: (x["gradepoint"] * x["credithours"]).sum() / x["credithours"].sum())
+            .reset_index(name="GPA")
+        )
+
+        # -----------------------------
+        # Calculate CGPA (Cumulative)
+        # -----------------------------
+        total_points = (df["gradepoint"] * df["credithours"]).sum()
+        total_credits = df["credithours"].sum()
+        cgpa = total_points / total_credits
 
         # -----------------------------
         # Create Tabs
@@ -60,31 +88,16 @@ if uploaded_file is not None:
         # ==================================================
         with tab1:
             st.header("📘 GPA Calculation per Semester")
-
-            # GPA = Sum(Grade_Point * Credit_Hours) / Sum(Credit_Hours)
-            gpa_summary = (
-                df.groupby("Semester")
-                .apply(lambda x: (x["Grade_Point"] * x["Credit_Hours"]).sum() / x["Credit_Hours"].sum())
-                .reset_index(name="GPA")
-            )
-
             st.dataframe(gpa_summary.style.format({"GPA": "{:.2f}"}))
-            st.bar_chart(gpa_summary.set_index("Semester"))
+            st.bar_chart(gpa_summary.set_index("semester"))
 
         # ==================================================
         # TAB 2: CGPA SUMMARY
         # ==================================================
         with tab2:
             st.header("📗 CGPA till 4th Semester")
-
-            total_points = (df["Grade_Point"] * df["Credit_Hours"]).sum()
-            total_credits = df["Credit_Hours"].sum()
-            cgpa = total_points / total_credits
-
             st.metric(label="🎯 Cumulative Grade Point Average (CGPA)", value=round(cgpa, 2))
-
-            # Line chart showing GPA trend by semester
-            st.line_chart(gpa_summary.set_index("Semester"))
+            st.line_chart(gpa_summary.set_index("semester"))
 
         # ==================================================
         # TAB 3: COURSE DETAILS
@@ -92,17 +105,15 @@ if uploaded_file is not None:
         with tab3:
             st.header("📙 Course Details")
             st.dataframe(df)
-            st.write("**Total Courses:**", df["Course"].nunique())
-            st.write("**Total Credit Hours:**", df["Credit_Hours"].sum())
+            st.write("**Total Courses:**", df["course"].nunique())
+            st.write("**Total Credit Hours:**", df["credithours"].sum())
 
     except ImportError:
-        # Show user-friendly message if openpyxl is missing
-        st.error("⚠️ Missing dependency: Please install 'openpyxl' using the command below:")
+        st.error("⚠️ Missing dependency: Please install 'openpyxl' using this command:")
         st.code("pip install openpyxl")
         st.stop()
 
     except Exception as e:
-        # Handle unexpected errors gracefully
         st.error(f"🚫 An unexpected error occurred: {e}")
 
 # -----------------------------
