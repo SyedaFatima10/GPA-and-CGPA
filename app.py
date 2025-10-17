@@ -1,117 +1,113 @@
-# ===============================
-# 📘 Streamlit App: GPA & CGPA Calculator
-# ===============================
+# =============================================
+# 🎓 Streamlit App: GPA & CGPA Calculator till 4th Semester
+# =============================================
 
+# Importing required libraries
 import streamlit as st
 import pandas as pd
 
-# ===============================
-# 🎯 App Title and Description
-# ===============================
+# -----------------------------
+# App Title and Description
+# -----------------------------
 st.set_page_config(page_title="GPA & CGPA Calculator", layout="wide")
-st.title("🎓 GPA and CGPA Calculator (Till 4th Semester)")
-st.write("Upload your marks file to calculate your GPA and CGPA automatically.")
+st.title("🎓 GPA & CGPA Calculator till 4th Semester")
+st.write("Upload your marks file to automatically calculate GPA and CGPA for up to 4 semesters.")
 
-# ===============================
-# 📂 File Upload Section
-# ===============================
-uploaded_file = st.file_uploader("Upload your Marks File (CSV or Excel)", type=["csv", "xlsx"])
+# -----------------------------
+# File Upload Section
+# -----------------------------
+st.sidebar.header("📂 Upload Your Marks File")
+uploaded_file = st.sidebar.file_uploader("Upload CSV or Excel file", type=["csv", "xlsx"])
 
-# ===============================
-# 📑 Instructions for the user
-# ===============================
-st.info("""
-**File Format Example:**
-
-| Semester | Course | Credit_Hours | Grade |
-|-----------|---------|---------------|--------|
-| 1 | Programming | 3 | A |
-| 1 | Math | 3 | B+ |
-| 2 | Physics | 4 | A- |
-| 3 | Data Science | 3 | B |
-| 4 | AI | 3 | A |
-
-Grades accepted: A, A-, B+, B, B-, C+, C, C-, D+, D, F
-""")
-
-# ===============================
-# 🧮 Grade to GPA Conversion Function
-# ===============================
-def grade_to_points(grade):
-    grade_scale = {
-        "A": 4.0, "A-": 3.7, "B+": 3.3, "B": 3.0, "B-": 2.7,
-        "C+": 2.3, "C": 2.0, "C-": 1.7, "D+": 1.3, "D": 1.0, "F": 0.0
-    }
-    return grade_scale.get(grade.upper(), 0.0)
-
-# ===============================
-# 📊 Process Data if File Uploaded
-# ===============================
+# -----------------------------
+# If user uploads a file
+# -----------------------------
 if uploaded_file is not None:
-    # Read file (detect CSV or Excel)
+
+    # Detect file type and read accordingly
     if uploaded_file.name.endswith('.csv'):
         df = pd.read_csv(uploaded_file)
     else:
         df = pd.read_excel(uploaded_file)
 
-    # Ensure proper column names
-    df.columns = df.columns.str.strip().str.title()
+    st.success("✅ File uploaded successfully!")
 
-    # Validate required columns
-    required_columns = {"Semester", "Course", "Credit_Hours", "Grade"}
+    # Display the uploaded data
+    st.subheader("📊 Uploaded Marks Data")
+    st.dataframe(df)
+
+    # -----------------------------
+    # Expected Columns in the Data
+    # -----------------------------
+    st.markdown("""
+    **Your file should include the following columns:**
+    - `Semester` (1–4)
+    - `Course` (Course name)
+    - `Credit_Hours`
+    - `Grade_Point` (4.0 scale)
+    """)
+
+    # Check if required columns exist
+    required_columns = {"Semester", "Course", "Credit_Hours", "Grade_Point"}
     if not required_columns.issubset(df.columns):
-        st.error("❌ Missing required columns! Please include: Semester, Course, Credit_Hours, Grade")
+        st.error("❌ The uploaded file must contain the columns: Semester, Course, Credit_Hours, and Grade_Point.")
     else:
-        # Convert Grades to Points
-        df["Grade_Points"] = df["Grade"].apply(grade_to_points)
-        df["Quality_Points"] = df["Grade_Points"] * df["Credit_Hours"]
+        # -----------------------------
+        # Tabs for separate sections
+        # -----------------------------
+        tab1, tab2, tab3 = st.tabs(["📘 GPA per Semester", "📗 CGPA Summary", "📙 Course Details"])
 
-        # ===============================
-        # 🧾 Separate Tabs for Each Section
-        # ===============================
-        tab1, tab2, tab3 = st.tabs(["📘 Semester GPA", "📈 Cumulative CGPA", "📄 Course Summary"])
-
-        # ===============================
-        # 📘 TAB 1: GPA per Semester
-        # ===============================
+        # =============================
+        # TAB 1: GPA per Semester
+        # =============================
         with tab1:
-            st.subheader("📘 GPA per Semester")
-            gpa_per_sem = (
+            st.header("📘 GPA Calculation for Each Semester")
+
+            # Calculate GPA for each semester
+            gpa_summary = (
                 df.groupby("Semester")
-                .apply(lambda x: round(x["Quality_Points"].sum() / x["Credit_Hours"].sum(), 2))
+                .apply(lambda x: (x["Grade_Point"] * x["Credit_Hours"]).sum() / x["Credit_Hours"].sum())
                 .reset_index(name="GPA")
             )
-            st.dataframe(gpa_per_sem, use_container_width=True)
-            st.bar_chart(gpa_per_sem.set_index("Semester"))
 
-        # ===============================
-        # 📈 TAB 2: Cumulative CGPA till 4th Semester
-        # ===============================
+            st.dataframe(gpa_summary)
+
+            # Display bar chart
+            st.bar_chart(gpa_summary.set_index("Semester"))
+
+        # =============================
+        # TAB 2: CGPA Summary
+        # =============================
         with tab2:
-            st.subheader("📈 CGPA Calculation (Till 4th Semester)")
+            st.header("📗 CGPA till 4th Semester")
 
-            total_quality_points = df["Quality_Points"].sum()
-            total_credit_hours = df["Credit_Hours"].sum()
-
-            cgpa = round(total_quality_points / total_credit_hours, 2)
-
-            st.metric(label="🎓 Cumulative CGPA", value=cgpa)
-
-            # Optional line chart for GPA trend
-            st.line_chart(gpa_per_sem.set_index("Semester"))
-
-        # ===============================
-        # 📄 TAB 3: Course Summary
-        # ===============================
-        with tab3:
-            st.subheader("📄 Detailed Course Summary")
-            st.dataframe(df, use_container_width=True)
-            total_courses = df["Course"].nunique()
+            # Calculate cumulative totals
+            total_points = (df["Grade_Point"] * df["Credit_Hours"]).sum()
             total_credits = df["Credit_Hours"].sum()
 
-            st.write(f"**Total Courses:** {total_courses}")
-            st.write(f"**Total Credit Hours:** {total_credits}")
-            st.write(f"**CGPA (again for reference):** {cgpa}")
+            cgpa = total_points / total_credits
+
+            st.metric(label="🎯 Cumulative Grade Point Average (CGPA)", value=round(cgpa, 2))
+
+            # Display cumulative GPA trend
+            cumulative_data = (
+                df.groupby("Semester")
+                .apply(lambda x: (x["Grade_Point"] * x["Credit_Hours"]).sum() / x["Credit_Hours"].sum())
+                .cumsum() / (df["Semester"].unique().size)
+            ).reset_index(name="Cumulative GPA")
+
+            st.line_chart(cumulative_data.set_index("Semester"))
+
+        # =============================
+        # TAB 3: Course Details
+        # =============================
+        with tab3:
+            st.header("📙 All Course Details")
+            st.dataframe(df)
+
+            st.write("Total Courses:", df["Course"].nunique())
+            st.write("Total Credit Hours:", df["Credit_Hours"].sum())
 
 else:
-    st.warning("📤 Please upload your marks file to begin.")
+    # Display message if no file uploaded
+    st.info("👆 Please upload your marks file to start calculating your GPA and CGPA.")
