@@ -4,7 +4,7 @@
 
 import streamlit as st
 import pandas as pd
-pip install openpyxl
+ 
 
 # -----------------------------
 # Page Configuration
