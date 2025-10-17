@@ -1,113 +1,111 @@
 # =============================================
-# 🎓 Streamlit App: GPA & CGPA Calculator till 4th Semester
+# 🎓 Streamlit App: GPA & CGPA Calculator (Excel Only, Error-Free)
 # =============================================
 
-# Importing required libraries
 import streamlit as st
 import pandas as pd
 
 # -----------------------------
-# App Title and Description
+# Page Configuration
 # -----------------------------
 st.set_page_config(page_title="GPA & CGPA Calculator", layout="wide")
+
+# -----------------------------
+# App Header
+# -----------------------------
 st.title("🎓 GPA & CGPA Calculator till 4th Semester")
-st.write("Upload your marks file to automatically calculate GPA and CGPA for up to 4 semesters.")
+st.write("Upload your Excel marks file (.xlsx or .xls) to automatically calculate GPA and CGPA.")
 
 # -----------------------------
-# File Upload Section
+# File Upload Section (Excel only)
 # -----------------------------
-st.sidebar.header("📂 Upload Your Marks File")
-uploaded_file = st.sidebar.file_uploader("Upload CSV or Excel file", type=["csv", "xlsx"])
+st.sidebar.header("📂 Upload Your Excel File")
+uploaded_file = st.sidebar.file_uploader("Upload Excel File", type=["xlsx", "xls"])
 
 # -----------------------------
-# If user uploads a file
+# When user uploads a file
 # -----------------------------
 if uploaded_file is not None:
+    try:
+        # Try to import openpyxl (required for Excel reading)
+        import openpyxl
 
-    # Detect file type and read accordingly
-    if uploaded_file.name.endswith('.csv'):
-        df = pd.read_csv(uploaded_file)
-    else:
-        df = pd.read_excel(uploaded_file)
+        # Read Excel file safely
+        df = pd.read_excel(uploaded_file, engine="openpyxl")
 
-    st.success("✅ File uploaded successfully!")
+        st.success("✅ Excel file uploaded successfully!")
 
-    # Display the uploaded data
-    st.subheader("📊 Uploaded Marks Data")
-    st.dataframe(df)
-
-    # -----------------------------
-    # Expected Columns in the Data
-    # -----------------------------
-    st.markdown("""
-    **Your file should include the following columns:**
-    - `Semester` (1–4)
-    - `Course` (Course name)
-    - `Credit_Hours`
-    - `Grade_Point` (4.0 scale)
-    """)
-
-    # Check if required columns exist
-    required_columns = {"Semester", "Course", "Credit_Hours", "Grade_Point"}
-    if not required_columns.issubset(df.columns):
-        st.error("❌ The uploaded file must contain the columns: Semester, Course, Credit_Hours, and Grade_Point.")
-    else:
         # -----------------------------
-        # Tabs for separate sections
+        # Display the uploaded data
+        # -----------------------------
+        st.subheader("📊 Uploaded Marks Data")
+        st.dataframe(df)
+
+        # -----------------------------
+        # Check if required columns exist
+        # -----------------------------
+        required_cols = {"Semester", "Course", "Credit_Hours", "Grade_Point"}
+        if not required_cols.issubset(df.columns):
+            st.error("❌ Missing required columns. Please include: Semester, Course, Credit_Hours, and Grade_Point.")
+            st.stop()
+
+        # -----------------------------
+        # Create Tabs
         # -----------------------------
         tab1, tab2, tab3 = st.tabs(["📘 GPA per Semester", "📗 CGPA Summary", "📙 Course Details"])
 
-        # =============================
-        # TAB 1: GPA per Semester
-        # =============================
+        # ==================================================
+        # TAB 1: GPA PER SEMESTER
+        # ==================================================
         with tab1:
-            st.header("📘 GPA Calculation for Each Semester")
+            st.header("📘 GPA Calculation per Semester")
 
-            # Calculate GPA for each semester
+            # GPA = Sum(Grade_Point * Credit_Hours) / Sum(Credit_Hours)
             gpa_summary = (
                 df.groupby("Semester")
                 .apply(lambda x: (x["Grade_Point"] * x["Credit_Hours"]).sum() / x["Credit_Hours"].sum())
                 .reset_index(name="GPA")
             )
 
-            st.dataframe(gpa_summary)
-
-            # Display bar chart
+            st.dataframe(gpa_summary.style.format({"GPA": "{:.2f}"}))
             st.bar_chart(gpa_summary.set_index("Semester"))
 
-        # =============================
-        # TAB 2: CGPA Summary
-        # =============================
+        # ==================================================
+        # TAB 2: CGPA SUMMARY
+        # ==================================================
         with tab2:
             st.header("📗 CGPA till 4th Semester")
 
-            # Calculate cumulative totals
             total_points = (df["Grade_Point"] * df["Credit_Hours"]).sum()
             total_credits = df["Credit_Hours"].sum()
-
             cgpa = total_points / total_credits
 
             st.metric(label="🎯 Cumulative Grade Point Average (CGPA)", value=round(cgpa, 2))
 
-            # Display cumulative GPA trend
-            cumulative_data = (
-                df.groupby("Semester")
-                .apply(lambda x: (x["Grade_Point"] * x["Credit_Hours"]).sum() / x["Credit_Hours"].sum())
-                .cumsum() / (df["Semester"].unique().size)
-            ).reset_index(name="Cumulative GPA")
+            # Line chart showing GPA trend by semester
+            st.line_chart(gpa_summary.set_index("Semester"))
 
-            st.line_chart(cumulative_data.set_index("Semester"))
-
-        # =============================
-        # TAB 3: Course Details
-        # =============================
+        # ==================================================
+        # TAB 3: COURSE DETAILS
+        # ==================================================
         with tab3:
-            st.header("📙 All Course Details")
+            st.header("📙 Course Details")
             st.dataframe(df)
+            st.write("**Total Courses:**", df["Course"].nunique())
+            st.write("**Total Credit Hours:**", df["Credit_Hours"].sum())
 
-            st.write("Total Courses:", df["Course"].nunique())
-            st.write("Total Credit Hours:", df["Credit_Hours"].sum())
+    except ImportError:
+        # Show user-friendly message if openpyxl is missing
+        st.error("⚠️ Missing dependency: Please install 'openpyxl' using the command below:")
+        st.code("pip install openpyxl")
+        st.stop()
 
+    except Exception as e:
+        # Handle unexpected errors gracefully
+        st.error(f"🚫 An unexpected error occurred: {e}")
+
+# -----------------------------
+# If no file uploaded yet
+# -----------------------------
 else:
-    # Display message if no file uploaded
-    st.info("👆 Please upload your marks file to start calculating your GPA and CGPA.")
+    st.info("👆 Please upload your Excel file (.xlsx or .xls) to start calculating your GPA and CGPA.")
