@@ -1,146 +1,120 @@
 import streamlit as st
 import pandas as pd
+import time
 
 # ------------------------- #
 # Streamlit Page Settings
 # ------------------------- #
-st.set_page_config(page_title="GPA & CGPA Calculator", page_icon="🎓", layout="centered")
+st.set_page_config(page_title="GPA & CGPA Calculator", page_icon="🎓", layout="wide")
 
 # ------------------------- #
-# Custom Page Styling
+# Custom Page Style (Dark Theme)
 # ------------------------- #
-st.markdown(
-    """
+st.markdown("""
     <style>
     body {
-        background-color: #f0f4f8;
+        background-color: #000000;
+        color: white;
     }
-    .main {
-        background-color: #ffffff;
-        padding: 2rem;
-        border-radius: 10px;
-        box-shadow: 0 0 15px rgba(0,0,0,0.1);
+    .stApp {
+        background-color: #000000;
+        color: white;
     }
-    h1 {
-        color: #1a237e;
+    .stDataFrame, .stDataEditor {
+        background-color: #1c1c1c !important;
+        color: white !important;
+    }
+    h1, h2, h3, h4 {
+        color: #00e5ff;
         text-align: center;
-        font-weight: bold;
     }
-    h2 {
-        color: #0d47a1;
+    .success {
+        color: #76ff03;
     }
     </style>
-    """,
-    unsafe_allow_html=True
-)
-
-st.title("🎓 GPA & CGPA Calculator (1st–4th Semester)")
-st.write("Enter course details for each semester to calculate GPA and CGPA.")
+""", unsafe_allow_html=True)
 
 # ------------------------- #
-# Helper Function: Grade Conversion
+# Title Section
 # ------------------------- #
-def grade_from_marks(marks):
+st.title("🎓 GPA & CGPA Calculator till 4th Semester")
+st.markdown("""
+Welcome to the **4-Semester GPA & CGPA Calculator**!  
+Enter your **marks (out of 100)** and **credit hours** for each course below.  
+The app will automatically calculate **semester GPAs** and your **overall CGPA**.
+""")
+
+# ------------------------- #
+# Grade Conversion Function
+# ------------------------- #
+def marks_to_gpa(marks):
     if marks >= 85:
-        return "A+", 4.00
+        return 4.00
     elif marks >= 80:
-        return "A", 3.66
+        return 3.70
     elif marks >= 75:
-        return "B+", 3.33
+        return 3.30
     elif marks >= 70:
-        return "B", 3.00
+        return 3.00
     elif marks >= 65:
-        return "B-", 2.66
-    elif marks >= 60:
-        return "C+", 2.33
+        return 2.70
+    elif marks >= 61:
+        return 2.30
+    elif marks >= 58:
+        return 2.00
     elif marks >= 55:
-        return "C", 2.00
+        return 1.70
     elif marks >= 50:
-        return "D", 1.66
+        return 1.00
     else:
-        return "F", 0.00
+        return 0.00
 
 # ------------------------- #
-# Semester Tabs
+# Semester Input Function
 # ------------------------- #
-tabs = st.tabs(["📘 Semester 1", "📗 Semester 2", "📙 Semester 3", "📕 Semester 4", "📊 Summary"])
-
-semester_data = {}
-semester_gpa = []
-
-for i in range(4):
-    with tabs[i]:
-        st.header(f"Semester {i+1} Details")
-
-        n = st.number_input(f"Number of courses in Semester {i+1}", min_value=1, max_value=10, value=6, key=f"num_{i}")
-        course_data = []
-
-        for j in range(1, n + 1):
-            st.subheader(f"Course {j}")
-            code = st.text_input("Course Code", key=f"code_{i}_{j}")
-            name = st.text_input("Course Title", key=f"name_{i}_{j}")
-            credit = st.number_input("Credit Hours", min_value=1, max_value=4, key=f"credit_{i}_{j}")
-            marks = st.number_input("Marks (0–100)", min_value=0, max_value=100, key=f"marks_{i}_{j}")
-
-            grade, gp = grade_from_marks(marks)
-            course_data.append({
-                "Course No": code,
-                "Course Title": name,
-                "Credit": credit,
-                "Marks": marks,
-                "L.G.": grade,
-                "G.P.": gp
-            })
-
-        df = pd.DataFrame(course_data)
-        semester_data[f"Semester_{i+1}"] = df
-
-        if not df.empty and df["Credit"].sum() > 0:
-            df["Total Points"] = df["Credit"] * df["G.P."]
-            gpa = round(df["Total Points"].sum() / df["Credit"].sum(), 2)
-            semester_gpa.append(gpa)
-
-            st.success(f"📊 GPA for Semester {i+1}: **{gpa}**")
-
-            # Neat Table
-            st.dataframe(df.style.set_table_styles(
-                [{
-                    'selector': 'thead th',
-                    'props': [('background-color', '#1e88e5'), ('color', 'white')]
-                },
-                {
-                    'selector': 'tbody td',
-                    'props': [('background-color', '#e3f2fd')]
-                }]
-            ), use_container_width=True)
-        else:
-            st.info("Please enter complete course details.")
+def semester_input(sem_num):
+    st.subheader(f"📘 Semester {sem_num}")
+    data = [{"Course": f"Course {i}", "Marks": 0.0, "Credit Hours": 3.0} for i in range(1, 7)]
+    df = pd.DataFrame(data)
+    edited_df = st.data_editor(
+        df,
+        use_container_width=True,
+        num_rows="fixed",
+        hide_index=True,
+        key=f"sem_{sem_num}"
+    )
+    return edited_df
 
 # ------------------------- #
-# Summary Tab: CGPA Display
+# Collect Semester Data
 # ------------------------- #
-with tabs[4]:
-    st.header("📊 Overall GPA & CGPA Summary")
+semesters = {f"Semester {i}": semester_input(i) for i in range(1, 5)}
 
-    if semester_gpa:
-        summary_df = pd.DataFrame({
-            "Semester": [f"Semester {i+1}" for i in range(len(semester_gpa))],
-            "GPA": semester_gpa
-        })
-        cgpa = round(sum(semester_gpa) / len(semester_gpa), 2)
+# ------------------------- #
+# GPA & CGPA Calculation
+# ------------------------- #
+if st.button("🚀 Calculate GPA and CGPA"):
+    gpa_results = []
+    total_weighted_points = 0
+    total_credits = 0
+    fireworks = False
 
-        st.success(f"🎯 **Cumulative CGPA (1st–4th Semester): {cgpa}**")
-        st.dataframe(summary_df.style.set_table_styles(
-            [{
-                'selector': 'thead th',
-                'props': [('background-color', '#1565c0'), ('color', 'white')]
-            },
-            {
-                'selector': 'tbody td',
-                'props': [('background-color', '#bbdefb')]
-            }]
-        ), use_container_width=True)
+    for sem_name, sem_data in semesters.items():
+        sem_data["GPA Points"] = sem_data["Marks"].apply(marks_to_gpa)
+        sem_data["Weighted Points"] = sem_data["GPA Points"] * sem_data["Credit Hours"]
 
-        st.line_chart(summary_df.set_index("Semester")["GPA"], use_container_width=True)
-    else:
-        st.info("Please calculate GPA for each semester first.")
+        sem_weighted = sem_data["Weighted Points"].sum()
+        sem_credits = sem_data["Credit Hours"].sum()
+        sem_gpa = sem_weighted / sem_credits if sem_credits > 0 else 0
+        gpa_results.append({"Semester": sem_name, "GPA": round(sem_gpa, 2)})
+
+        total_weighted_points += sem_weighted
+        total_credits += sem_credits
+
+        # Fireworks if perfect GPA
+        if round(sem_gpa, 2) == 4.00:
+            fireworks = True
+
+    cgpa = total_weighted_points / total_credits if total_credits > 0 else 0
+
+    # ------------------------- #
