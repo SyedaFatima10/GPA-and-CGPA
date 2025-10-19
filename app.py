@@ -1,19 +1,10 @@
 import streamlit as st
 import pandas as pd
 
-# ------------------------- #
-# Streamlit Page Settings
-# ------------------------- #
 st.set_page_config(page_title="GPA & CGPA Calculator", page_icon="🎓", layout="wide")
 
-# ------------------------- #
-# Title Section
-# ------------------------- #
 st.title("🎓 GPA & CGPA Calculator (Up to 4th Semester)")
-
-# ------------------------- #
 # Grade Conversion Functions
-# ------------------------- #
 def marks_to_gpa(marks):
     if marks >= 85:
         return 4.00
@@ -57,10 +48,7 @@ def gpa_to_grade(gpa):
         return "D"
     else:
         return "F"
-
-# ------------------------- #
 # Semester Input Function
-# ------------------------- #
 def semester_input(sem_num):
     st.subheader(f"📘 Semester {sem_num}")
     data = [{"Course": f"Course {i}", "Marks": 0.0, "Credit Hours": 3.0} for i in range(1, 7)]
@@ -75,15 +63,10 @@ def semester_input(sem_num):
     )
     
     return edited_df
-
-# ------------------------- #
 # Collect Semester Data
-# ------------------------- #
 semesters = {f"Semester {i}": semester_input(i) for i in range(1, 5)}
-
-# ------------------------- #
 # GPA & CGPA Calculation
-# ------------------------- #
+
 if st.button("🚀 Calculate GPA and CGPA"):
     cumulative_points = 0
     cumulative_credits = 0
