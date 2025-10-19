@@ -13,7 +13,7 @@ st.title("🎓 GPA & CGPA Calculator till 4th Semester")
 st.markdown("""
 Welcome to the **4-Semester GPA & CGPA Calculator**!  
 Enter your **marks (out of 100)** and **credit hours** for each course below.  
-The app will automatically calculate **subject-wise GPA**, **semester GPAs**, and your **overall CGPA**.
+The app will automatically calculate **subject-wise GPA**, **semester GPAs**, **semester-wise CGPA**, and your **overall CGPA**.
 """)
 
 # ------------------------- #
@@ -67,43 +67,52 @@ semesters = {f"Semester {i}": semester_input(i) for i in range(1, 5)}
 # ------------------------- #
 if st.button("🚀 Calculate GPA and CGPA"):
     gpa_results = []
-    total_weighted_points = 0
-    total_credits = 0
+    cumulative_points = 0
+    cumulative_credits = 0
 
-    for sem_name, sem_data in semesters.items():
-        # Add subject-wise GPA
+    for sem_idx, (sem_name, sem_data) in enumerate(semesters.items(), start=1):
+        # Subject-wise GPA
         sem_data["Subject GPA"] = sem_data["Marks"].apply(marks_to_gpa)
         sem_data["Weighted Points"] = sem_data["Subject GPA"] * sem_data["Credit Hours"]
 
+        # Semester GPA
         sem_weighted = sem_data["Weighted Points"].sum()
         sem_credits = sem_data["Credit Hours"].sum()
         sem_gpa = sem_weighted / sem_credits if sem_credits > 0 else 0
-        gpa_results.append({"Semester": sem_name, "GPA": round(sem_gpa, 2)})
 
-        total_weighted_points += sem_weighted
-        total_credits += sem_credits
+        # Cumulative / Semester CGPA
+        cumulative_points += sem_weighted
+        cumulative_credits += sem_credits
+        sem_cgpa = cumulative_points / cumulative_credits if cumulative_credits > 0 else 0
 
-        # Show subject-wise GPA table
+        # Store semester summary
+        gpa_results.append({
+            "Semester": sem_name,
+            "Semester GPA": round(sem_gpa, 2),
+            "Semester CGPA": round(sem_cgpa, 2)
+        })
+
+        # Display Subject-wise table for this semester
         st.markdown(f"### 📚 {sem_name} Summary")
         st.dataframe(
             sem_data[["Course", "Marks", "Credit Hours", "Subject GPA"]],
             use_container_width=True
         )
-        st.success(f"**GPA for {sem_name}: {round(sem_gpa, 2)}**")
+        st.success(f"**GPA for {sem_name}: {round(sem_gpa,2)} | Semester CGPA: {round(sem_cgpa,2)}**")
 
-    # Overall CGPA
-    cgpa = total_weighted_points / total_credits if total_credits > 0 else 0
+    # Overall CGPA after 4 semesters
+    overall_cgpa = cumulative_points / cumulative_credits if cumulative_credits > 0 else 0
 
     # ------------------------- #
-    # Display Results
+    # Display Semester-wise & Overall Results
     # ------------------------- #
     st.markdown("---")
     st.header("🎯 Final Results")
 
-    st.success(f"📊 **Overall CGPA (1st–4th Semester): {cgpa:.2f}**")
-
     results_df = pd.DataFrame(gpa_results)
-    st.write("📈 **Semester-wise GPA Summary:**")
+    st.write("📈 **Semester-wise GPA & CGPA Summary:**")
     st.dataframe(results_df, use_container_width=True)
 
-    st.line_chart(results_df.set_index("Semester")["GPA"], use_container_width=True)
+    st.success(f"📊 **Overall CGPA (1st–4th Semester): {overall_cgpa:.2f}**")
+
+    st.line_chart(results_df.set_index("Semester")["Semester GPA"], use_container_width=True)
