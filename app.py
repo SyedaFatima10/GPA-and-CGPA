@@ -46,7 +46,6 @@ def marks_to_gpa(marks):
 # ------------------------- #
 def semester_input(sem_num):
     st.subheader(f"📘 Semester {sem_num}")
-    # Input table: Course, Marks, Credit Hours
     data = [{"Course": f"Course {i}", "Marks": 0.0, "Credit Hours": 3.0} for i in range(1, 7)]
     df = pd.DataFrame(data)
     
@@ -57,7 +56,6 @@ def semester_input(sem_num):
         hide_index=True,
         key=f"sem_{sem_num}"
     )
-    
     return edited_df
 
 # ------------------------- #
@@ -71,10 +69,10 @@ semesters = {f"Semester {i}": semester_input(i) for i in range(1, 5)}
 if st.button("🚀 Calculate GPA and CGPA"):
     cumulative_points = 0
     cumulative_credits = 0
-    results = []
+    semester_gpas = []
 
     for sem_name, sem_data in semesters.items():
-        # Calculate subject-wise GPA
+        # Calculate subject-wise GPA (used internally)
         sem_data["Subject GPA"] = sem_data["Marks"].apply(marks_to_gpa)
         sem_data["Weighted Points"] = sem_data["Subject GPA"] * sem_data["Credit Hours"]
 
@@ -88,29 +86,16 @@ if st.button("🚀 Calculate GPA and CGPA"):
         cumulative_credits += sem_credits
         sem_cgpa = cumulative_points / cumulative_credits if cumulative_credits > 0 else 0
 
-        # Store results for final table
-        results.append({
-            "Semester": sem_name,
-            "Semester GPA": round(sem_gpa, 2),
-            "Semester CGPA": round(sem_cgpa, 2),
-            "Subject GPA": sem_data["Subject GPA"].tolist()
-        })
-
-        # Display input table without Subject GPA
-        st.markdown(f"### 📚 {sem_name} Summary")
-        st.dataframe(sem_data[["Course", "Marks", "Credit Hours"]], use_container_width=True)
+        # Save semester GPA for line chart
+        semester_gpas.append((sem_name, round(sem_gpa, 2)))
 
         st.success(f"**GPA for {sem_name}: {round(sem_gpa,2)} | Semester CGPA: {round(sem_cgpa,2)}**")
 
+    # Overall CGPA
     overall_cgpa = cumulative_points / cumulative_credits if cumulative_credits > 0 else 0
-
-    # ------------------------- #
-    # Display Final Results
-    # ------------------------- #
     st.markdown("---")
-    st.header("🎯 Final Results")
-    final_df = pd.DataFrame(results)
-    st.dataframe(final_df, use_container_width=True)
-
     st.success(f"📊 **Overall CGPA (1st–4th Semester): {overall_cgpa:.2f}**")
-    st.line_chart(final_df.set_index("Semester")["Semester GPA"], use_container_width=True)
+
+    # Optional: Line chart for semester GPAs
+    chart_df = pd.DataFrame(semester_gpas, columns=["Semester", "GPA"]).set_index("Semester")
+    st.line_chart(chart_df, use_container_width=True)
