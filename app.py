@@ -13,7 +13,7 @@ st.title("🎓 GPA & CGPA Calculator till 4th Semester")
 st.markdown("""
 Welcome to the **4-Semester GPA & CGPA Calculator**!  
 Enter your **marks (out of 100)** and **credit hours** for each course below.  
-The app will automatically calculate **subject-wise GPA**, **semester GPA**, **semester CGPA**, and your **overall CGPA**.
+The app will calculate **subject-wise GPA**, **semester GPA**, **semester CGPA**, and **overall CGPA** all in the same table.
 """)
 
 # ------------------------- #
@@ -73,7 +73,6 @@ semesters = {f"Semester {i}": semester_input(i) for i in range(1, 5)}
 # GPA & CGPA Calculation
 # ------------------------- #
 if st.button("🚀 Calculate GPA and CGPA"):
-    gpa_results = []
     cumulative_points = 0
     cumulative_credits = 0
 
@@ -91,31 +90,23 @@ if st.button("🚀 Calculate GPA and CGPA"):
         cumulative_credits += sem_credits
         sem_cgpa = cumulative_points / cumulative_credits if cumulative_credits > 0 else 0
 
-        # Store semester summary
-        gpa_results.append({
-            "Semester": sem_name,
-            "Semester GPA": round(sem_gpa, 2),
-            "Semester CGPA": round(sem_cgpa, 2)
-        })
+        # Append rows for Semester GPA and Semester CGPA
+        sem_data = sem_data.append(
+            {"Course": "Semester GPA", "Marks": "", "Credit Hours": "", "Subject GPA": round(sem_gpa, 2)},
+            ignore_index=True
+        )
+        sem_data = sem_data.append(
+            {"Course": "Semester CGPA", "Marks": "", "Credit Hours": "", "Subject GPA": round(sem_cgpa, 2)},
+            ignore_index=True
+        )
 
-        # Display same table with Subject GPA
+        # Display all in the same table
         st.markdown(f"### 📚 {sem_name} Summary")
         st.dataframe(
             sem_data[["Course", "Marks", "Credit Hours", "Subject GPA"]],
             use_container_width=True
         )
-        st.success(f"**GPA for {sem_name}: {round(sem_gpa,2)} | Semester CGPA: {round(sem_cgpa,2)}**")
 
     # Overall CGPA after 4 semesters
     overall_cgpa = cumulative_points / cumulative_credits if cumulative_credits > 0 else 0
-
-    # Display final results
-    st.markdown("---")
-    st.header("🎯 Final Results")
-    results_df = pd.DataFrame(gpa_results)
-    st.write("📈 **Semester-wise GPA & CGPA Summary:**")
-    st.dataframe(results_df, use_container_width=True)
-
     st.success(f"📊 **Overall CGPA (1st–4th Semester): {overall_cgpa:.2f}**")
-
-    st.line_chart(results_df.set_index("Semester")["Semester GPA"], use_container_width=True)
