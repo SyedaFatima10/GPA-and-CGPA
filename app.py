@@ -46,11 +46,9 @@ def marks_to_gpa(marks):
 # ------------------------- #
 def semester_input(sem_num):
     st.subheader(f"📘 Semester {sem_num}")
-    # Create initial data
     data = [{"Course": f"Course {i}", "Marks": 0.0, "Credit Hours": 3.0, "Subject GPA": 0.0} for i in range(1, 7)]
     df = pd.DataFrame(data)
-    
-    # Data editor
+
     edited_df = st.data_editor(
         df,
         use_container_width=True,
@@ -58,10 +56,9 @@ def semester_input(sem_num):
         hide_index=True,
         key=f"sem_{sem_num}"
     )
-    
-    # Automatically calculate Subject GPA based on entered marks
+
+    # Calculate Subject GPA
     edited_df["Subject GPA"] = edited_df["Marks"].apply(marks_to_gpa)
-    
     return edited_df
 
 # ------------------------- #
@@ -76,8 +73,7 @@ if st.button("🚀 Calculate GPA and CGPA"):
     cumulative_points = 0
     cumulative_credits = 0
 
-    for sem_idx, (sem_name, sem_data) in enumerate(semesters.items(), start=1):
-        # Weighted points
+    for sem_name, sem_data in semesters.items():
         sem_data["Weighted Points"] = sem_data["Subject GPA"] * sem_data["Credit Hours"]
 
         # Semester GPA
@@ -90,23 +86,17 @@ if st.button("🚀 Calculate GPA and CGPA"):
         cumulative_credits += sem_credits
         sem_cgpa = cumulative_points / cumulative_credits if cumulative_credits > 0 else 0
 
-        # Append rows for Semester GPA and Semester CGPA
-        sem_data = sem_data.append(
-            {"Course": "Semester GPA", "Marks": "", "Credit Hours": "", "Subject GPA": round(sem_gpa, 2)},
-            ignore_index=True
-        )
-        sem_data = sem_data.append(
-            {"Course": "Semester CGPA", "Marks": "", "Credit Hours": "", "Subject GPA": round(sem_cgpa, 2)},
-            ignore_index=True
-        )
+        # Add GPA and CGPA as extra rows in the same table
+        sem_data.loc[len(sem_data)] = ["Semester GPA", "", "", round(sem_gpa, 2)]
+        sem_data.loc[len(sem_data)] = ["Semester CGPA", "", "", round(sem_cgpa, 2)]
 
-        # Display all in the same table
+        # Display everything in one table
         st.markdown(f"### 📚 {sem_name} Summary")
         st.dataframe(
             sem_data[["Course", "Marks", "Credit Hours", "Subject GPA"]],
             use_container_width=True
         )
 
-    # Overall CGPA after 4 semesters
+    # Overall CGPA
     overall_cgpa = cumulative_points / cumulative_credits if cumulative_credits > 0 else 0
     st.success(f"📊 **Overall CGPA (1st–4th Semester): {overall_cgpa:.2f}**")
