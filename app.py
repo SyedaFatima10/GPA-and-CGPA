@@ -46,6 +46,7 @@ def marks_to_gpa(marks):
 # ------------------------- #
 def semester_input(sem_num):
     st.subheader(f"📘 Semester {sem_num}")
+    # Only Course, Marks, Credit Hours
     data = [{"Course": f"Course {i}", "Marks": 0.0, "Credit Hours": 3.0} for i in range(1, 7)]
     df = pd.DataFrame(data)
     
@@ -56,6 +57,7 @@ def semester_input(sem_num):
         hide_index=True,
         key=f"sem_{sem_num}"
     )
+    
     return edited_df
 
 # ------------------------- #
@@ -72,7 +74,7 @@ if st.button("🚀 Calculate GPA and CGPA"):
     semester_gpas = []
 
     for sem_name, sem_data in semesters.items():
-        # Calculate subject-wise GPA (used internally)
+        # Calculate subject-wise GPA internally
         sem_data["Subject GPA"] = sem_data["Marks"].apply(marks_to_gpa)
         sem_data["Weighted Points"] = sem_data["Subject GPA"] * sem_data["Credit Hours"]
 
@@ -86,10 +88,15 @@ if st.button("🚀 Calculate GPA and CGPA"):
         cumulative_credits += sem_credits
         sem_cgpa = cumulative_points / cumulative_credits if cumulative_credits > 0 else 0
 
-        # Save semester GPA for line chart
-        semester_gpas.append((sem_name, round(sem_gpa, 2)))
-
+        # Display results including subject-wise GPA
+        st.markdown(f"### 📚 {sem_name} Results")
+        st.dataframe(
+            sem_data[["Course", "Marks", "Credit Hours", "Subject GPA"]],
+            use_container_width=True
+        )
         st.success(f"**GPA for {sem_name}: {round(sem_gpa,2)} | Semester CGPA: {round(sem_cgpa,2)}**")
+
+        semester_gpas.append((sem_name, round(sem_gpa, 2)))
 
     # Overall CGPA
     overall_cgpa = cumulative_points / cumulative_credits if cumulative_credits > 0 else 0
