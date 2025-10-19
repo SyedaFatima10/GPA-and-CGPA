@@ -92,36 +92,44 @@ for sem_index, tab in enumerate(tabs, start=1):
         course_list = semester_courses[sem_index]
         course_data = []
 
+        # Collect marks & compute GPA per course
         for code, title, credit in course_list:
-            marks = st.number_input(f"{code} - {title} | Credit Hours: {credit}",
-                                    min_value=0, max_value=100, key=f"marks_{sem_index}_{code}")
+            marks = st.number_input(
+                f"{code} - {title} | Credit Hours: {credit}",
+                min_value=0, max_value=100, key=f"marks_{sem_index}_{code}"
+            )
             grade, gp = grade_from_marks(marks)
             course_data.append({
-                "Semester": sem_index,
                 "Course Code": code,
                 "Course Title": title,
                 "Credit Hours": credit,
                 "Marks": marks,
                 "Letter Grade": grade,
-                "Grade Points": gp
+                "Grade Points": gp,
+                "Total Points": credit * gp
             })
 
+        # DataFrame for current semester
         df = pd.DataFrame(course_data)
         semester_data[sem_index] = df
 
         # GPA Calculation
-        df["Total Points"] = df["Credit Hours"] * df["Grade Points"]
         total_points = df["Total Points"].sum()
         total_credits = df["Credit Hours"].sum()
         gpa = round(total_points / total_credits, 2)
         semester_gpas.append(gpa)
 
-        st.success(f"📊 GPA for Semester {sem_index}: **{gpa}**")
-        st.dataframe(df[["Course Code", "Course Title", "Credit Hours", "Marks", "Letter Grade", "Grade Points"]],
-                     use_container_width=True)
+        # -------------------------
+        # Display neatly formatted table
+        # -------------------------
+        st.markdown(f"### 📊 GPA for Semester {sem_index}: **{gpa}**")
+        st.dataframe(
+            df[["Course Code", "Course Title", "Credit Hours", "Marks", "Letter Grade", "Grade Points"]],
+            use_container_width=True
+        )
 
 # -------------------------
-# Dynamic CGPA Calculation
+# CGPA Calculation
 # -------------------------
 st.divider()
 st.header("🎯 Overall CGPA Calculation")
@@ -135,18 +143,7 @@ if not all_semesters.empty:
 
     st.success(f"🎓 **Overall CGPA till 4th Semester: {cgpa}**")
 
+    # GPA Summary Table
     gpa_summary = pd.DataFrame({
         "Semester": [1, 2, 3, 4],
-        "GPA": semester_gpas
-    })
-
-    st.subheader("📈 GPA Summary by Semester")
-    st.dataframe(gpa_summary, use_container_width=True)
-    st.line_chart(gpa_summary.set_index("Semester"))
-
-    st.subheader("📚 Full Course Details")
-    st.dataframe(all_semesters[["Semester", "Course Code", "Course Title", "Credit Hours",
-                                "Marks", "Letter Grade", "Grade Points"]],
-                 use_container_width=True)
-else:
-    st.warning("Please enter marks for at least one semester to calculate CGPA.")
+        "GPA": sem
