@@ -10,11 +10,6 @@ st.set_page_config(page_title="GPA & CGPA Calculator", page_icon="🎓", layout=
 # Title Section
 # ------------------------- #
 st.title("🎓 GPA & CGPA Calculator (Up to 4th Semester)")
-st.markdown("""
-Welcome to the **4-Semester GPA & CGPA Calculator**!  
-Enter your **marks (out of 100)** and **credit hours** for each course below.  
-The app will automatically calculate **subject-wise GPA**, **semester GPA**, **semester CGPA**, and your **overall CGPA**.
-""")
 
 # ------------------------- #
 # Grade Conversion Function
