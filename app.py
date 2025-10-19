@@ -6,8 +6,36 @@ import pandas as pd
 # ------------------------- #
 st.set_page_config(page_title="GPA & CGPA Calculator", page_icon="🎓", layout="centered")
 
-st.title("🎓 GPA & CGPA Calculator (1st Semester)")
-st.write("Enter your first semester course details below to calculate your GPA and CGPA.")
+# ------------------------- #
+# Custom Page Styling
+# ------------------------- #
+st.markdown(
+    """
+    <style>
+    body {
+        background-color: #f0f4f8;
+    }
+    .main {
+        background-color: #ffffff;
+        padding: 2rem;
+        border-radius: 10px;
+        box-shadow: 0 0 15px rgba(0,0,0,0.1);
+    }
+    h1 {
+        color: #1a237e;
+        text-align: center;
+        font-weight: bold;
+    }
+    h2 {
+        color: #0d47a1;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
+st.title("🎓 GPA & CGPA Calculator (1st–4th Semester)")
+st.write("Enter course details for each semester to calculate GPA and CGPA.")
 
 # ------------------------- #
 # Helper Function: Grade Conversion
@@ -16,7 +44,7 @@ def grade_from_marks(marks):
     if marks >= 85:
         return "A+", 4.00
     elif marks >= 80:
-        return "A-", 3.66
+        return "A", 3.66
     elif marks >= 75:
         return "B+", 3.33
     elif marks >= 70:
@@ -32,65 +60,87 @@ def grade_from_marks(marks):
     else:
         return "F", 0.00
 
-
 # ------------------------- #
-# Tabs
+# Semester Tabs
 # ------------------------- #
-tab1, tab2 = st.tabs(["📘 GPA & CGPA Calculator", "📚 Courses Entered"])
+tabs = st.tabs(["📘 Semester 1", "📗 Semester 2", "📙 Semester 3", "📕 Semester 4", "📊 Summary"])
 
-# ------------------------- #
-# Tab 1: GPA / CGPA Calculation
-# ------------------------- #
-with tab1:
-    st.header("Enter Course Details")
+semester_data = {}
+semester_gpa = []
 
-    n = st.number_input("How many courses did you take in 1st semester?", min_value=1, max_value=10, value=6)
+for i in range(4):
+    with tabs[i]:
+        st.header(f"Semester {i+1} Details")
 
-    course_data = []
+        n = st.number_input(f"Number of courses in Semester {i+1}", min_value=1, max_value=10, value=6, key=f"num_{i}")
+        course_data = []
 
-    for i in range(1, n + 1):
-        st.subheader(f"Course {i}")
-        course_code = st.text_input(f"Course Code (e.g., CSC101)", key=f"code_{i}")
-        course_name = st.text_input(f"Course Title", key=f"name_{i}")
-        credit = st.number_input(f"Credit Hours", min_value=1, max_value=4, key=f"credit_{i}")
-        marks = st.number_input(f"Marks (0–100)", min_value=0, max_value=100, key=f"marks_{i}")
+        for j in range(1, n + 1):
+            st.subheader(f"Course {j}")
+            code = st.text_input("Course Code", key=f"code_{i}_{j}")
+            name = st.text_input("Course Title", key=f"name_{i}_{j}")
+            credit = st.number_input("Credit Hours", min_value=1, max_value=4, key=f"credit_{i}_{j}")
+            marks = st.number_input("Marks (0–100)", min_value=0, max_value=100, key=f"marks_{i}_{j}")
 
-        grade, gp = grade_from_marks(marks)
-        course_data.append({
-            "Course No": course_code,
-            "Course Title": course_name,
-            "Credit": credit,
-            "Marks": marks,
-            "L.G.": grade,
-            "G.P.": gp
-        })
+            grade, gp = grade_from_marks(marks)
+            course_data.append({
+                "Course No": code,
+                "Course Title": name,
+                "Credit": credit,
+                "Marks": marks,
+                "L.G.": grade,
+                "G.P.": gp
+            })
 
-    df = pd.DataFrame(course_data)
+        df = pd.DataFrame(course_data)
+        semester_data[f"Semester_{i+1}"] = df
 
-    if st.button("Calculate GPA & CGPA"):
-        if not df.empty:
+        if not df.empty and df["Credit"].sum() > 0:
             df["Total Points"] = df["Credit"] * df["G.P."]
-            total_credits = df["Credit"].sum()
-            total_points = df["Total Points"].sum()
-            gpa = round(total_points / total_credits, 2)
-            cgpa = gpa  # First semester => CGPA = GPA
+            gpa = round(df["Total Points"].sum() / df["Credit"].sum(), 2)
+            semester_gpa.append(gpa)
 
-            st.success(f"📊 **GPA (1st Semester): {gpa}**")
-            st.success(f"🎓 **CGPA (Cumulative): {cgpa}**")
+            st.success(f"📊 GPA for Semester {i+1}: **{gpa}**")
 
-            st.write("### Semester Summary")
-            st.dataframe(df[["Course No", "Course Title", "Credit", "Marks", "L.G.", "G.P."]],
-                         use_container_width=True)
+            # Neat Table
+            st.dataframe(df.style.set_table_styles(
+                [{
+                    'selector': 'thead th',
+                    'props': [('background-color', '#1e88e5'), ('color', 'white')]
+                },
+                {
+                    'selector': 'tbody td',
+                    'props': [('background-color', '#e3f2fd')]
+                }]
+            ), use_container_width=True)
         else:
-            st.warning("Please fill in your course details first!")
+            st.info("Please enter complete course details.")
 
 # ------------------------- #
-# Tab 2: Courses Entered
+# Summary Tab: CGPA Display
 # ------------------------- #
-with tab2:
-    st.header("Courses Entered This Session")
-    if "df" in locals() and not df.empty:
-        st.dataframe(df[["Course No", "Course Title", "Credit", "Marks", "L.G.", "G.P."]],
-                     use_container_width=True)
+with tabs[4]:
+    st.header("📊 Overall GPA & CGPA Summary")
+
+    if semester_gpa:
+        summary_df = pd.DataFrame({
+            "Semester": [f"Semester {i+1}" for i in range(len(semester_gpa))],
+            "GPA": semester_gpa
+        })
+        cgpa = round(sum(semester_gpa) / len(semester_gpa), 2)
+
+        st.success(f"🎯 **Cumulative CGPA (1st–4th Semester): {cgpa}**")
+        st.dataframe(summary_df.style.set_table_styles(
+            [{
+                'selector': 'thead th',
+                'props': [('background-color', '#1565c0'), ('color', 'white')]
+            },
+            {
+                'selector': 'tbody td',
+                'props': [('background-color', '#bbdefb')]
+            }]
+        ), use_container_width=True)
+
+        st.line_chart(summary_df.set_index("Semester")["GPA"], use_container_width=True)
     else:
-        st.info("No courses entered yet. Please go to the first tab to input your data.")
+        st.info("Please calculate GPA for each semester first.")
