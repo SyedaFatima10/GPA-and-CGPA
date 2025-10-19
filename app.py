@@ -8,33 +8,6 @@ import time
 st.set_page_config(page_title="GPA & CGPA Calculator", page_icon="🎓", layout="wide")
 
 # ------------------------- #
-# Custom Page Style (Dark Theme)
-# ------------------------- #
-st.markdown("""
-    <style>
-    body {
-        background-color: #000000;
-        color: white;
-    }
-    .stApp {
-        background-color: #000000;
-        color: white;
-    }
-    .stDataFrame, .stDataEditor {
-        background-color: #1c1c1c !important;
-        color: white !important;
-    }
-    h1, h2, h3, h4 {
-        color: #00e5ff;
-        text-align: center;
-    }
-    .success {
-        color: #76ff03;
-    }
-    </style>
-""", unsafe_allow_html=True)
-
-# ------------------------- #
 # Title Section
 # ------------------------- #
 st.title("🎓 GPA & CGPA Calculator till 4th Semester")
@@ -118,3 +91,23 @@ if st.button("🚀 Calculate GPA and CGPA"):
     cgpa = total_weighted_points / total_credits if total_credits > 0 else 0
 
     # ------------------------- #
+    # Display Results
+    # ------------------------- #
+    st.markdown("---")
+    st.header("🎯 Final Results")
+
+    st.success(f"📊 **Overall CGPA (1st–4th Semester): {cgpa:.2f}**")
+
+    results_df = pd.DataFrame(gpa_results)
+    st.write("📈 **Semester-wise GPA Summary:**")
+    st.dataframe(results_df, use_container_width=True)
+
+    st.line_chart(results_df.set_index("Semester")["GPA"], use_container_width=True)
+
+    # 🎇 Fireworks Effect
+    if fireworks:
+        st.balloons()
+        st.success("🎇 Congratulations! Perfect 4.0 GPA! 🎇")
+        st.markdown("<h3 style='color:#ff5722; text-align:center;'>🔥 You're on fire! 🔥</h3>", unsafe_allow_html=True)
+        time.sleep(1)
+        st.balloons()
