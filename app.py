@@ -105,10 +105,10 @@ if st.button("🚀 Calculate GPA and CGPA"):
         cumulative_credits += sem_credits
         sem_cgpa = cumulative_points / cumulative_credits if cumulative_credits > 0 else 0
 
-        # Display results
+        # Display results with Grade first
         st.markdown(f"### 📚 {sem_name} Results")
         st.dataframe(
-            sem_data[["Course", "Marks", "Credit Hours", "Subject GPA", "Grade"]],
+            sem_data[["Course", "Marks", "Credit Hours", "Grade", "Subject GPA"]],
             use_container_width=True
         )
         st.success(f"**GPA for {sem_name}: {round(sem_gpa,2)} | Semester CGPA: {round(sem_cgpa,2)}**")
