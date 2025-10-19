@@ -11,13 +11,13 @@ import pandas as pd
 st.set_page_config(page_title="Statistics GPA & CGPA Calculator", page_icon="📊", layout="wide")
 
 st.title("🎓 GPA & CGPA Calculator for Statistics Program")
-st.write("Each semester has 6 courses — 2 Humanities (2 credits each) and 4 Statistics major courses (3 credits each).")
+st.write("Each semester has 6 courses — 2 Humanities (2 credits each) and 4 Major courses (3 credits each).")
 
 # -------------------------
 # Helper Function: Grade Conversion
 # -------------------------
 def grade_from_marks(marks):
-    """Converts marks (0–100) into letter grade and grade points."""
+    """Convert marks (0–100) to letter grade and grade points."""
     if marks >= 85:
         return "A+", 4.00
     elif marks >= 80:
@@ -93,7 +93,7 @@ for sem_index, tab in enumerate(tabs, start=1):
         course_data = []
 
         for code, title, credit in course_list:
-            marks = st.number_input(f"{code} - {title} | Credit: {credit}",
+            marks = st.number_input(f"{code} - {title} | Credit Hours: {credit}",
                                     min_value=0, max_value=100, key=f"marks_{sem_index}_{code}")
             grade, gp = grade_from_marks(marks)
             course_data.append({
@@ -121,31 +121,32 @@ for sem_index, tab in enumerate(tabs, start=1):
                      use_container_width=True)
 
 # -------------------------
-# CGPA Calculation Across Semesters
+# Dynamic CGPA Calculation
 # -------------------------
-if st.button("🎯 Calculate Overall CGPA"):
-    all_semesters = pd.concat(semester_data.values(), ignore_index=True)
-    if not all_semesters.empty:
-        all_semesters["Total Points"] = all_semesters["Credit Hours"] * all_semesters["Grade Points"]
-        total_points = all_semesters["Total Points"].sum()
-        total_credits = all_semesters["Credit Hours"].sum()
-        cgpa = round(total_points / total_credits, 2)
+st.divider()
+st.header("🎯 Overall CGPA Calculation")
 
-        st.balloons()
-        st.header(f"🎓 Overall CGPA till 4th Semester: {cgpa}")
+all_semesters = pd.concat(semester_data.values(), ignore_index=True)
+if not all_semesters.empty:
+    all_semesters["Total Points"] = all_semesters["Credit Hours"] * all_semesters["Grade Points"]
+    total_points = all_semesters["Total Points"].sum()
+    total_credits = all_semesters["Credit Hours"].sum()
+    cgpa = round(total_points / total_credits, 2)
 
-        gpa_summary = pd.DataFrame({
-            "Semester": [1, 2, 3, 4],
-            "GPA": semester_gpas
-        })
+    st.success(f"🎓 **Overall CGPA till 4th Semester: {cgpa}**")
 
-        st.subheader("📈 GPA Summary by Semester")
-        st.dataframe(gpa_summary, use_container_width=True)
-        st.line_chart(gpa_summary.set_index("Semester"))
+    gpa_summary = pd.DataFrame({
+        "Semester": [1, 2, 3, 4],
+        "GPA": semester_gpas
+    })
 
-        st.subheader("📚 Full Course Details")
-        st.dataframe(all_semesters[["Semester", "Course Code", "Course Title", "Credit Hours",
-                                    "Marks", "Letter Grade", "Grade Points"]],
-                     use_container_width=True)
-    else:
-        st.warning("Please enter marks for at least one semester!")
+    st.subheader("📈 GPA Summary by Semester")
+    st.dataframe(gpa_summary, use_container_width=True)
+    st.line_chart(gpa_summary.set_index("Semester"))
+
+    st.subheader("📚 Full Course Details")
+    st.dataframe(all_semesters[["Semester", "Course Code", "Course Title", "Credit Hours",
+                                "Marks", "Letter Grade", "Grade Points"]],
+                 use_container_width=True)
+else:
+    st.warning("Please enter marks for at least one semester to calculate CGPA.")
